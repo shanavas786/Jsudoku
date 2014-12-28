@@ -1,0 +1,368 @@
+<!Doctype html>
+<html>
+<head>
+<title></title>
+<script type="text/javascript">
+/*********************************************************************************
+ * Copyright (C) 2014 Shanavas m <shanavas[dot]m2[at]gmail.com>                  *
+ * 																				 *
+ * This script is free software: you can redistribute it and/or modify it under  *
+ * the terms of the GNU General Public License as published by the Free Software *
+ * Foundation, either version 2 of the License, or (at your option) any later    *
+ * version. See http://www.gnu.org/copyleft/gpl.html for the full text of the    *
+ * license.																		 *
+ *********************************************************************************/
+
+	var $ = function(o){return document.getElementById(o);}
+	var $C = function(k){return document.createElement(k);}
+	var puzzle = new Array();
+	var panel;
+	var debug; //space for debug information
+	var rowArray = new Array(); //array to store content of each row
+	var colArray = new Array(); //array to store content of each column
+	var gridArray = new Array();//array to store content of each grid
+	var cellArray = new Array();//array to store numbres possible for each cell
+	var forward = true;  // pupulation direction
+	var difficulty = 1;
+	var previousCell;
+	var currentCell; //cell under selection
+
+	function init() {
+		panel = $("panel");
+		panel.innerHTML = "";
+		previousCell = null;
+		//debug
+		debug = $("debug");
+		
+		//make grid
+		for ( var row = 0; row < 9; row++) {
+			for ( var col = 0; col < 9; col++) {
+				var newDiv = $C("div");
+				newDiv.style.left = col * 60 + 'px';
+				newDiv.style.top = row * 60 + 'px';
+				var newSpan = $C("span");
+				newSpan.id = row * 9 + col;
+				newDiv.appendChild(newSpan);
+				panel.appendChild(newDiv);
+			}
+
+		}
+		//make inner horizontal borders
+		var hline1 = $C("div");
+		hline1.className = "hline";
+		hline1.style.top = "180px";
+		panel.appendChild(hline1);
+		var hline2 = $C("div");
+		hline2.className = "hline";
+		hline2.style.top = "360px";
+		panel.appendChild(hline2);
+		
+		//make inner horizontal borders
+		var vline1 = $C("div");
+		vline1.className = "vline";
+		vline1.style.left = "180px";
+		panel.appendChild(vline1);
+		var vline2 = $C("div");
+		vline2.className = "vline";
+		vline2.style.left = "360px";
+		panel.appendChild(vline2);
+
+		populate();
+		createPuzzle();
+	}
+
+	function populate() {
+		//initialize storage arrays
+		for ( var count = 0; count < 9; count++) {
+			//intialize array for each row,column and grid
+			rowArray[count] = new Array();
+			colArray[count] = new Array();
+			gridArray[count] = new Array();
+		}
+		
+		//loop through cells to populate
+		for ( var cellId = 0; cellId < 81; cellId++) {
+			var row = Math.floor(cellId / 9);
+			var col = cellId % 9;
+			var grid = Math.floor((row / 3)) * 3 + Math.floor(col / 3);
+			var cell = $(cellId);
+			
+			if(forward){
+				// to populate new cell 
+				cellArray[cellId] = new Array(1,2,3,4,5,6,7,8,9);
+				cellArray[cellId] = subtract(cellArray[cellId],rowArray[row], colArray[col],
+						gridArray[grid]);
+
+
+			}else{
+				//to change the previously populated cell
+				var num = cell.innerHTML ;
+				//remove the number from row, column, grid and cell arrays
+				for(var i=0;i<rowArray[row].length;i++){
+					if(num == rowArray[row][i]){
+						rowArray[row].splice(i,1);
+					}
+				}
+
+	
+				for(var i=0;i<colArray[col].length;i++){
+					if(num == colArray[col][i]){
+						colArray[col].splice(i,1);
+					}
+				}
+
+				for(var i=0; i<gridArray[grid].length; i++){
+					if(num == gridArray[grid][i]){
+						gridArray[grid].splice(i,1);
+					}
+				}
+				for(var i=0; i<cellArray[cellId].length; i++){
+					if(num == cellArray[cellId][i]){
+						cellArray[cellId].splice(i,1);
+					}
+				}
+
+			}
+			
+			// if there is any possible value select one and populate arrays and cell
+			if (cellArray[cellId].length) {
+				var index = Math.floor(Math.random() * cellArray[cellId
+	].length);
+				var number = cellArray[cellId][index];
+				rowArray[row].push(number);
+				colArray[col].push(number);
+				gridArray[grid].push(number);
+				cell.innerHTML = number;
+				forward = true;
+
+			} else {
+				//if there is no possible value go to previous cell to change
+				cellId -= 2;
+				forward = false;
+			}
+		}
+	}
+
+	function subtract(source, sub1, sub2, sub3) {
+		var diffArray = [].concat(source);
+		for ( var i = 0; i < sub1.length; i++) {
+			for ( var j = 0; j < diffArray.length; j++) {
+				if (sub1[i] == diffArray[j]) {
+					diffArray.splice(j, 1);
+				}
+			}
+		}
+
+		for ( var i = 0; i < sub2.length; i++) {
+			for ( var j = 0; j < diffArray.length; j++) {
+				if (sub2[i] == diffArray[j]) {
+					diffArray.splice(j, 1);
+				}
+			}
+		}
+
+		for ( var i = 0; i < sub3.length; i++) {
+			for ( var j = 0; j < diffArray.length; j++) {
+				if (sub3[i] == diffArray[j]) {
+					diffArray.splice(j, 1);
+				}
+			}
+		}
+
+		return diffArray;
+	}
+	
+	function setDifficulty(diff){
+		difficulty = diff;
+	}
+	
+	function createPuzzle(){
+		puzzle = [];
+		var emptycells = 10+difficulty*10;
+		var randArray = new Array();
+		var rand = 81;
+		randArray[81]= 0;
+		for(var i=1; i<emptycells;i++){
+			 do{
+				 rand = Math.floor(Math.random()*81);
+			 }while(randArray[rand] != null);
+			 randArray[rand] = 0;
+			 puzzle.push(rand);
+		}
+		for(var i=0;i<puzzle.length; i++){
+			cellId = puzzle[i];
+			var cell = $(cellId);
+			cell.parentNode.setAttribute('onClick', "select("+cellId+");");
+			cell.innerHTML = "";
+			cell.parentNode.className  = "editable";
+		}
+		select(puzzle[0]); //select one emptycell
+	}
+	function select(cellId){
+		if(previousCell !=null){
+			$(previousCell).parentNode.className = "editable";
+		}
+		currentCell = cellId;
+		$(currentCell).parentNode.className = "selected";
+		previousCell = currentCell;
+	}
+	function insert(num){
+		$(currentCell).innerHTML = num;
+		for(var i=0; i<puzzle.length;i++){
+			var cellId = puzzle[i];
+			if($(cellId).innerHTML != rowArray[Math.floor(cellId/9)][cellId%9]){
+				return;
+			}
+		}
+		alert("Puzzle Solved");
+		if(confirm("Start New Game ?")){
+			init();
+		}
+	}
+	function hint(){
+		insert(rowArray[Math.floor(currentCell/9)][currentCell%9]);
+	}
+	function solve(){
+		for(var i=0;i<puzzle.length;i++){
+			select(puzzle[i]);
+			hint();
+		}
+	}
+	function navigate(key){
+		switch(key){
+		case 37:
+			//left
+			break;
+		case 38:
+			//up
+			break;
+		case 39:
+			//right
+			break;
+		case 40:
+			//down
+			break;
+		default:
+		}
+	}
+</script>
+<style>
+/*keybord navigation
+*/
+body{
+	font-family: tahoma;
+}
+h2{
+	font-family: Lucida Handwriting;
+	color: rgb(142,2,9);
+}
+#control{
+	width:200px;
+	height: 540px;
+	position: relative;
+	float:left;
+	margin-left: 15%;
+	margin-right: 20px;
+}
+#panel {
+	width: 540px;
+	height: 540px;
+	position: relative;
+	float:left;
+	border: 4px solid rgb(142, 1, 9);
+}
+
+#panel div {
+	width: 60px;
+	height: 60px;
+	position: absolute;
+	border: 1px solid rgb(142, 1, 9);
+}
+
+#panel span {
+	position: absolute;
+	top: 25px;
+	left: 25px;
+}
+#panel > div.hline{
+	width:540px;
+	height:3px;
+	background-color:rgb(142,2,9);
+	position: absolute;
+}
+#panel > div.vline{
+	width:3px;
+	height:540px;
+	background-color:rgb(142,2,9);
+	position: absolute;
+}
+#numbers{
+	width: 100px;
+	position: relative;
+	float: left;
+}
+.menu{
+	list-style-type: none;
+	text-align: left;
+}
+.menu > li{
+	font-size: 1.5em;
+	margin: 0px 0px 15px 0px;
+	padding-left: 10px;
+	padding-bottom: 5px;
+	padding-top: 5px;
+	border: 1px solid rgb(142,2,9);
+	color: rgb(142,2,9);
+	cursor: pointer;
+	text-transform: capitalize;
+	background-color:rgb(250,200,200);
+}
+.editable{
+	background-color:rgb(250,200,200);
+	cursor: pointer;
+	
+}
+.selected{
+	background-color:rgb(200,250,200);
+	cursor: pointer;
+	
+}
+
+</style>
+</head>
+<body onload="init();" onkeyup="navigate(event.keyCode)">
+	<h2 align="center">Jsudoku</h2>
+	<div id="control">
+	<ul class="menu">
+	<li onclick="if(confirm('Start New Game?'))init();">new game</li>
+	<li>difficulty 
+	<select onchange="setDifficulty(this.value);init()">
+		<option value="1"> &nbsp;1&nbsp; </option>
+		<option value="2"> &nbsp;2&nbsp; </option>
+		<option value="3"> &nbsp;3&nbsp; </option>
+		<option value="4"> &nbsp;4&nbsp; </option>
+		<option value="5"> &nbsp;5&nbsp;</option>
+		
+		</select>
+	</li>
+	<li onclick="hint();">hint</li>
+	<li onclick="solve();">solve</li>
+	</ul>
+	</div>
+	<div id="panel"></div>
+	<div id="numbers">
+	<ul class="menu">
+	<li onclick="insert(1)">&nbsp;1</li>
+	<li onclick="insert(2)">&nbsp;2</li>
+	<li onclick="insert(3)">&nbsp;3</li>
+	<li onclick="insert(4)">&nbsp;4</li>
+	<li onclick="insert(5)">&nbsp;5</li>
+	<li onclick="insert(6)">&nbsp;6</li>
+	<li onclick="insert(7)">&nbsp;7</li>
+	<li onclick="insert(8)">&nbsp;8</li>
+	<li onclick="insert(9)">&nbsp;9</li>
+	</ul>
+	</div>
+	<div id="debug"></div>
+</body>
+</html>
